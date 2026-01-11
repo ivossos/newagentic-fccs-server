@@ -1,0 +1,171 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FCCS Agent",
+    "description": "Oracle FCCS Financial Data API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://fccs-agent-241840460713.us-central1.run.app"
+    }
+  ],
+  "paths": {
+    "/query": {
+      "post": {
+        "operationId": "naturalLanguageQuery",
+        "summary": "Process natural language query about FCCS data",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Natural language query (e.g., 'What is revenue for FY24?')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query result"
+          }
+        }
+      }
+    },
+    "/data/smart-retrieve": {
+      "post": {
+        "operationId": "smartRetrieve",
+        "summary": "Get financial data from FCCS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account"],
+                "properties": {
+                  "account": {
+                    "type": "string",
+                    "description": "Account member (e.g., '4110', 'Total Revenues')"
+                  },
+                  "entity": {
+                    "type": "string",
+                    "default": "FCCS_Total Geography"
+                  },
+                  "period": {
+                    "type": "string",
+                    "default": "Jan"
+                  },
+                  "years": {
+                    "type": "string",
+                    "default": "FY24"
+                  },
+                  "scenario": {
+                    "type": "string",
+                    "default": "Actual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Financial data"
+          }
+        }
+      }
+    },
+    "/application": {
+      "get": {
+        "operationId": "getApplicationInfo",
+        "summary": "Get FCCS application information",
+        "responses": {
+          "200": {
+            "description": "Application info"
+          }
+        }
+      }
+    },
+    "/dimensions": {
+      "get": {
+        "operationId": "getDimensions",
+        "summary": "List all dimensions",
+        "responses": {
+          "200": {
+            "description": "List of dimensions"
+          }
+        }
+      }
+    },
+    "/journals": {
+      "get": {
+        "operationId": "getJournals",
+        "summary": "List journals",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {"type": "string", "default": "Jan"}
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {"type": "string", "default": "FY24"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of journals"
+          }
+        }
+      }
+    },
+    "/rules/run": {
+      "post": {
+        "operationId": "runBusinessRule",
+        "summary": "Run a business rule",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rule_name"],
+                "properties": {
+                  "rule_name": {
+                    "type": "string",
+                    "description": "Rule name (e.g., 'Consolidate', 'Force Consolidate')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rule execution result"
+          }
+        }
+      }
+    },
+    "/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "List recent jobs",
+        "responses": {
+          "200": {
+            "description": "List of jobs"
+          }
+        }
+      }
+    }
+  }
+}

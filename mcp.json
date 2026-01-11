@@ -1,0 +1,50 @@
+{
+  "mcpServers": {
+    "fccs-anthropic-agent": {
+      "command": "python",
+      "args": [
+        "-u",
+        "-m",
+        "cli.fastmcp_stdio"
+      ],
+      "description": "FastMCP + Anthropic Claude agentic MCP server for Oracle FCCS",
+      "disabled": false,
+      "env": {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+        "PYTHONUNBUFFERED": "1",
+        "FCCS_MOCK_MODE": "false",
+        "FCCS_API_VERSION": "v3",
+        "DATABASE_URL": "sqlite:///C:/Users/ivoss/Downloads/Projetos/agentic/newagentic-fccs-server/data/fccs_agent.db",
+        "MODEL_ID": "claude-opus-4-20250514",
+        "FASTMCP_HOST": "127.0.0.1",
+        "FASTMCP_PORT": "8000",
+        "FCCS_SKIP_CONFIRMATION": "false",
+        "FCCS_TRUSTED_RULES": "Consolidate,Force Consolidate,Translate,Force Translate",
+        "RL_ENABLED": "true",
+        "RL_EXPLORATION_RATE": "0.1",
+        "RL_LEARNING_RATE": "0.3",
+        "RL_DISCOUNT_FACTOR": "0.95",
+        "RL_MIN_SAMPLES": "3"
+      },
+      "tools": [
+        "run_business_rule",
+        "copy_data",
+        "check_data_status",
+        "check_consolidation_status",
+        "list_entities",
+        "list_dimensions",
+        "get_entity_details",
+        "get_dimension_details",
+        "get_job_status",
+        "list_journals",
+        "get_journal_details",
+        "generate_report",
+        "copy_report",
+        "get_application_details",
+        "request_confirmation",
+        "provide_feedback"
+      ]
+    }
+  }
+}
