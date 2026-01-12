@@ -36,7 +36,7 @@ def _get_metadata_path() -> Path:
     # Try multiple locations
     possible_paths = [
         Path(__file__).parent.parent.parent / "data",
-        Path("C:/Users/ivoss/Downloads/Projetos/agentic/FastMCP-Fccs-Agent/data"),
+        Path("C:/Users/ivoss/Downloads/Projetos/agentic/newagentic-fccs-server/data"),
         Path(os.getcwd()) / "data",
     ]
     for path in possible_paths:

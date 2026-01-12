@@ -50,7 +50,7 @@ Download from [git-scm.com](https://git-scm.com/download/win) if you need to clo
 ### Step 1: Navigate to Project Directory
 
 ```powershell
-cd C:\Users\ivoss\Downloads\Projetos\agentic\FastMCP-Fccs-Agent
+cd C:\Users\ivoss\Downloads\Projetos\agentic\newagentic-fccs-server
 ```
 
 ### Step 2: Create Virtual Environment
@@ -246,9 +246,9 @@ Create or edit `claude_desktop_config.json`:
 {
   "mcpServers": {
     "fccs-agent": {
-      "command": "C:\\Users\\ivoss\\Downloads\\Projetos\\agentic\\FastMCP-Fccs-Agent\\venv\\Scripts\\python.exe",
+      "command": "C:\\Users\\ivoss\\Downloads\\Projetos\\agentic\\newagentic-fccs-server\\venv\\Scripts\\python.exe",
       "args": ["-m", "cli.fastmcp_stdio"],
-      "cwd": "C:\\Users\\ivoss\\Downloads\\Projetos\\agentic\\FastMCP-Fccs-Agent",
+      "cwd": "C:\\Users\\ivoss\\Downloads\\Projetos\\agentic\\newagentic-fccs-server",
       "env": {
         "FCCS_URL": "https://your-epm-instance.oraclecloud.com",
         "FCCS_USERNAME": "your_username",
@@ -370,7 +370,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ```powershell
 # Solution: Use full path
-& "C:\Users\ivoss\Downloads\Projetos\agentic\FastMCP-Fccs-Agent\venv\Scripts\Activate.ps1"
+& "C:\Users\ivoss\Downloads\Projetos\agentic\newagentic-fccs-server\venv\Scripts\Activate.ps1"
 ```
 
 ### Port Already in Use
@@ -469,7 +469,7 @@ python scripts\show_rl_stats.py
 ### Project Structure
 
 ```
-FastMCP-Fccs-Agent/
+newagentic-fccs-server/
 ├── fccs_agent/          # Main agent package
 │   ├── tools/           # MCP tools
 │   ├── services/        # Business logic
