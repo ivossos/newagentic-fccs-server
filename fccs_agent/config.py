@@ -25,7 +25,7 @@ class FCCSConfig(BaseSettings):
     anthropic_api_key: Optional[str] = Field(None, alias="ANTHROPIC_API_KEY")
 
     # Claude Model for planning and reasoning
-    model_id: str = Field("claude-opus-4-20250514", alias="MODEL_ID")
+    model_id: str = Field("claude-opus-4-5-20251101", alias="MODEL_ID")
 
     # Server
     port: int = Field(8080, alias="PORT")
