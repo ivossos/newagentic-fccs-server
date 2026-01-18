@@ -14,6 +14,7 @@ from fccs_agent.tools import (
     local_data,
     consolidation_ops,
     intercompany,
+    personalization,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "local_data",
     "consolidation_ops",
     "intercompany",
+    "personalization",
 ]

@@ -7,7 +7,7 @@ This module provides intelligent dimension exploration with:
 - Smart POV suggestions
 """
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict, Tuple
 
 from fccs_agent.intelligence.olap_discovery import (
     get_discovery_service,
@@ -16,6 +16,21 @@ from fccs_agent.intelligence.olap_discovery import (
     MemberMatch,
     DrillPath,
 )
+
+_semantic_search_service = None
+
+
+def _get_semantic_search_service():
+    """Lazy load embedding-based semantic search service."""
+    global _semantic_search_service
+    if _semantic_search_service is None:
+        try:
+            from fccs_agent.services.semantic_search import init_semantic_search
+            from fccs_agent.config import config
+            _semantic_search_service = init_semantic_search(config.database_url)
+        except Exception:
+            pass
+    return _semantic_search_service
 
 
 async def explore_dimension(
@@ -200,6 +215,20 @@ async def explore_dimension(
             for m in matches
         ]
 
+        semantic_search = _get_semantic_search_service()
+        if semantic_search:
+            embedding_results = semantic_search.search(search_term, dimension=dimension, top_k=20)
+            for item in embedding_results:
+                results.append({
+                    "member_name": item.member_name,
+                    "match_type": "embedding",
+                    "confidence": round(item.score, 3),
+                    "matched_term": item.alias or item.member_name,
+                    "alias": item.alias,
+                    "level": None,
+                    "data_storage": None
+                })
+
         return {
             "status": "success",
             "data": {
@@ -283,6 +312,42 @@ async def search_members(
         }
         for m in matches
     ]
+
+    semantic_search = _get_semantic_search_service()
+    embedding_results = []
+    if semantic_search:
+        if dimension:
+            embedding_results = semantic_search.search(search_term, dimension=dimension, top_k=limit)
+        else:
+            dims = ["Account", "Entity", "Movement", "Data Source"]
+            grouped = semantic_search.search_by_dimension(search_term, dims, top_k_per_dimension=3)
+            for dim_results in grouped.values():
+                embedding_results.extend(dim_results)
+
+    if embedding_results:
+        combined: Dict[Tuple[str, str], dict] = {
+            (r["dimension"], r["member_name"]): r for r in results
+        }
+        for item in embedding_results:
+            candidate = {
+                "member_name": item.member_name,
+                "dimension": item.dimension,
+                "match_type": "embedding",
+                "confidence": round(item.score, 3),
+                "matched_term": item.alias or item.member_name,
+                "alias": item.alias,
+                "level": None,
+                "data_storage": None,
+                "account_type": None
+            }
+            key = (candidate["dimension"], candidate["member_name"])
+            existing = combined.get(key)
+            if not existing or candidate["confidence"] > existing.get("confidence", 0):
+                combined[key] = candidate
+
+        results = list(combined.values())
+        results.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+        results = results[:limit]
 
     return {
         "status": "success",
@@ -412,6 +477,24 @@ async def list_available_dimensions() -> dict[str, Any]:
     }
 
 
+async def get_semantic_index_stats() -> dict[str, Any]:
+    """Get semantic search index statistics."""
+    service = _get_semantic_search_service()
+    if not service:
+        return {"status": "error", "error": "Semantic search service not available"}
+
+    stats = service.get_indexed_dimensions()
+    total = sum(item.get("member_count", 0) for item in stats)
+
+    return {
+        "status": "success",
+        "data": {
+            "dimensions": stats,
+            "total_indexed": total
+        }
+    }
+
+
 def _member_to_dict(node: MemberNode, include_metadata: bool = True) -> dict:
     """Convert MemberNode to dictionary."""
     result = {"name": node.name}
@@ -523,6 +606,15 @@ TOOL_DEFINITIONS = [
     {
         "name": "list_available_dimensions",
         "description": "List all available dimensions with metadata (member count, depth, cardinality).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "get_semantic_index_stats",
+        "description": "Get semantic search embedding index statistics.",
         "inputSchema": {
             "type": "object",
             "properties": {},

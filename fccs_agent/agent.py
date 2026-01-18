@@ -15,6 +15,12 @@ from fccs_agent.services.cache_service import (
     init_cache_service,
     get_cache_service
 )
+from fccs_agent.services.semantic_search import init_semantic_search
+from fccs_agent.services.valid_intersections import init_valid_intersections
+from fccs_agent.services.personalization_service import (
+    init_personalization_service,
+    get_personalization_service
+)
 from fccs_agent.services.rl_service import (
     init_rl_service,
     get_rl_service
@@ -22,7 +28,7 @@ from fccs_agent.services.rl_service import (
 from fccs_agent.intelligence.orchestrator import FCCSOrchestrator
 
 # Import all tool modules
-from fccs_agent.tools import application, jobs, dimensions, journals, data, reports, consolidation, memo, feedback, local_data, exploration, consolidation_ops, intercompany
+from fccs_agent.tools import application, jobs, dimensions, journals, data, reports, consolidation, memo, feedback, local_data, exploration, consolidation_ops, intercompany, personalization
 
 # Global state
 _fccs_client: Optional[FccsClient] = None
@@ -60,6 +66,7 @@ Available tools:
 - generate_report, get_report_job_status: Generate reports
 - submit_feedback, get_recent_executions: Provide feedback to improve RL learning
 - explore_dimension, search_members, get_drill_suggestions: OLAP-aware dimension navigation with semantic search
+- get_personalization_status, update_personalization_item, set_personalization_preference: Onboarding checklist and preferences
 - And more consolidation and data management tools
 
 After executing a tool, you can use submit_feedback with the execution_id from the result
@@ -125,6 +132,32 @@ async def initialize_agent(cfg: Optional[FCCSConfig] = None) -> str:
     except Exception as e:
         print(f"Warning: Could not initialize cache service: {e}", file=sys.stderr)
 
+    # Initialize semantic search service
+    try:
+        semantic_service = init_semantic_search(use_config.database_url)
+        if semantic_service and not semantic_service.get_indexed_dimensions():
+            from fccs_agent.services.semantic_search import index_from_csvs
+            indexed = index_from_csvs(semantic_service)
+            total_indexed = sum(indexed.values())
+            print(f"Semantic search indexed {total_indexed} members", file=sys.stderr)
+        print("Semantic search service initialized", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Could not initialize semantic search: {e}", file=sys.stderr)
+
+    # Initialize valid intersections cache
+    try:
+        init_valid_intersections(use_config.database_url)
+        print("Valid intersections cache initialized", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Could not initialize valid intersections cache: {e}", file=sys.stderr)
+
+    # Initialize personalization tracker
+    try:
+        init_personalization_service(use_config.database_url)
+        print("Personalization service initialized", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Could not initialize personalization service: {e}", file=sys.stderr)
+
     # Initialize RL service (optional - only if feedback service is available and RL enabled)
     if use_config.rl_enabled and feedback_service:
         try:
@@ -158,6 +191,15 @@ async def initialize_agent(cfg: Optional[FCCSConfig] = None) -> str:
             memo.set_app_name(_app_name)
             consolidation_ops.set_app_name(_app_name)
             intercompany.set_app_name(_app_name)
+
+            try:
+                personalization_service = get_personalization_service()
+                if personalization_service:
+                    personalization_service.ensure_checklist(session_id="default")
+                    personalization_service.set_preference("default", "app_name", _app_name)
+                    personalization_service.update_item("default", "app_name", status="done", value=_app_name)
+            except Exception:
+                pass
 
             return _app_name
         else:
@@ -318,6 +360,10 @@ TOOL_HANDLERS = {
     "get_icp_mismatches": intercompany.get_icp_mismatches,
     "create_icp_elimination_journal": intercompany.create_icp_elimination_journal,
     "get_icp_elimination_summary": intercompany.get_icp_elimination_summary,
+    # Personalization
+    "get_personalization_status": personalization.get_personalization_status,
+    "update_personalization_item": personalization.update_personalization_item,
+    "set_personalization_preference": personalization.set_personalization_preference,
     # Agentic
     "agentic_query": agentic_query,
 }
@@ -337,6 +383,7 @@ ALL_TOOL_DEFINITIONS = (
     exploration.TOOL_DEFINITIONS +
     consolidation_ops.TOOL_DEFINITIONS +
     intercompany.TOOL_DEFINITIONS +
+    personalization.TOOL_DEFINITIONS +
     [AGENTIC_TOOL_DEFINITION]
 )
 

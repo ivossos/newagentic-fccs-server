@@ -18,6 +18,8 @@ _app_name: str = None
 # Lazy import to avoid circular dependencies
 _semantic_resolver = None
 _discovery_service = None
+_semantic_search_service = None
+_valid_intersections_service = None
 
 
 def _get_resolver():
@@ -34,6 +36,32 @@ def _get_resolver():
         except Exception:
             pass
     return _semantic_resolver
+
+
+def _get_semantic_search_service():
+    """Lazy load semantic search service."""
+    global _semantic_search_service
+    if _semantic_search_service is None:
+        try:
+            from fccs_agent.services.semantic_search import init_semantic_search
+            from fccs_agent.config import config
+            _semantic_search_service = init_semantic_search(config.database_url)
+        except Exception:
+            pass
+    return _semantic_search_service
+
+
+def _get_valid_intersections_service():
+    """Lazy load valid intersections cache."""
+    global _valid_intersections_service
+    if _valid_intersections_service is None:
+        try:
+            from fccs_agent.services.valid_intersections import init_valid_intersections
+            from fccs_agent.config import config
+            _valid_intersections_service = init_valid_intersections(config.database_url)
+        except Exception:
+            pass
+    return _valid_intersections_service
 
 
 def set_client(client: FccsClient):
@@ -384,6 +412,12 @@ def _resolve_member(member: str, dimension: str) -> Tuple[str, float, List[str]]
     Returns:
         Tuple of (resolved_member, confidence, suggestions).
     """
+    semantic_search = _get_semantic_search_service()
+    if semantic_search and dimension in ["Account", "Entity", "Movement", "Data Source"]:
+        match = semantic_search.resolve_member(member, dimension=dimension, min_confidence=0.55)
+        if match:
+            return match.member_name, match.score, []
+
     resolver = _get_resolver()
     if not resolver:
         return member, 1.0, []
@@ -399,6 +433,64 @@ def _resolve_member(member: str, dimension: str) -> Tuple[str, float, List[str]]
     # Low confidence - return original with suggestions
     suggestions = [m.member_name for m in matches] if matches else []
     return member, 0.0, suggestions
+
+
+def _extract_numeric_values(payload: dict[str, Any]) -> List[float]:
+    """Extract numeric values from an FCCS data slice response."""
+    values: List[float] = []
+    if not isinstance(payload, dict):
+        return values
+
+    rows = payload.get("rows")
+    if isinstance(rows, list):
+        for row in rows:
+            data = row.get("data") if isinstance(row, dict) else None
+            if isinstance(data, list):
+                for cell in data:
+                    if isinstance(cell, (int, float)):
+                        values.append(float(cell))
+
+    return values
+
+
+def _record_valid_intersection(
+    account: str,
+    entity: str,
+    period: str,
+    years: str,
+    scenario: str,
+    consolidation: str,
+    result: dict[str, Any],
+    last_value: Optional[float],
+    discovered_by: str
+) -> None:
+    """Record a POV intersection in the valid intersections cache."""
+    service = _get_valid_intersections_service()
+    if not service:
+        return
+
+    try:
+        from fccs_agent.services.valid_intersections import POVIntersection, IntersectionStatus
+        values = _extract_numeric_values(result)
+        has_data = bool(values)
+        status = IntersectionStatus.VALID if has_data else IntersectionStatus.EMPTY
+        pov = POVIntersection(
+            entity=entity,
+            scenario=scenario,
+            year=years,
+            period=period,
+            account=account,
+            consolidation=consolidation
+        )
+        service.record_intersection(
+            pov=pov,
+            status=status,
+            has_data=has_data,
+            last_value=last_value,
+            discovered_by=discovered_by
+        )
+    except Exception:
+        pass
 
 
 async def export_data_slice(
@@ -501,6 +593,20 @@ async def smart_retrieve(
     response = {"status": "success", "data": result}
     if validation_info:
         response["member_resolution"] = validation_info
+
+    values = _extract_numeric_values(result)
+    last_value = values[0] if values else None
+    _record_valid_intersection(
+        account=resolved_account,
+        entity=resolved_entity,
+        period=period,
+        years=years,
+        scenario=scenario,
+        consolidation=consolidation,
+        result=result,
+        last_value=last_value,
+        discovered_by="smart_retrieve"
+    )
 
     return response
 
@@ -828,6 +934,18 @@ async def smart_import(
     
     if validation_info:
         response["member_resolution"] = validation_info
+
+    _record_valid_intersection(
+        account=resolved_account,
+        entity=resolved_entity,
+        period=period,
+        years=years,
+        scenario=scenario,
+        consolidation=consolidation,
+        result={"rows": [{"data": [value]}]},
+        last_value=value,
+        discovered_by="smart_import"
+    )
     
     return response
 

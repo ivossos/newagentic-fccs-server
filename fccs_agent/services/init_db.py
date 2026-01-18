@@ -4,6 +4,9 @@ This script initializes all database tables for the FCCS Agent services:
 - Feedback Service: ToolExecution, ToolMetrics
 - Cache Service: CacheEntry, MetadataCache
 - RL Service: RLPolicy, RLEpisode, RLMetrics, ToolSequence
+- Semantic Search: MemberEmbedding, SemanticSearchConfig
+- Valid Intersections: ValidIntersection, IntersectionAccessLog
+- Personalization: PersonalizationChecklist
 
 Usage:
     python -m fccs_agent.services.init_db
@@ -53,6 +56,15 @@ def init_database(db_url: str | None = None, echo: bool = False) -> None:
     from fccs_agent.services.rl_service import Base as RLBase
     from fccs_agent.services.rl_service import RLPolicy, RLEpisode, RLMetrics, ToolSequence
 
+    from fccs_agent.services.semantic_search import Base as SemanticBase
+    from fccs_agent.services.semantic_search import MemberEmbedding, SemanticSearchConfig
+
+    from fccs_agent.services.valid_intersections import Base as IntersectionBase
+    from fccs_agent.services.valid_intersections import ValidIntersection, IntersectionAccessLog
+
+    from fccs_agent.services.personalization_service import Base as PersonalizationBase
+    from fccs_agent.services.personalization_service import PersonalizationChecklist
+
     # Create all tables
     print(f"Initializing database: {db_url}")
 
@@ -64,6 +76,15 @@ def init_database(db_url: str | None = None, echo: bool = False) -> None:
 
     RLBase.metadata.create_all(engine)
     print("  Created RL tables: rl_policy, rl_episodes, rl_metrics, rl_tool_sequences")
+
+    SemanticBase.metadata.create_all(engine)
+    print("  Created semantic search tables: member_embeddings, semantic_search_config")
+
+    IntersectionBase.metadata.create_all(engine)
+    print("  Created valid intersections tables: valid_intersections, intersection_access_log")
+
+    PersonalizationBase.metadata.create_all(engine)
+    print("  Created personalization tables: personalization_checklist")
 
     # Verify tables exist
     inspector = inspect(engine)
@@ -96,12 +117,18 @@ def reset_database(db_url: str | None = None, confirm: bool = False) -> None:
     from fccs_agent.services.feedback_service import Base as FeedbackBase
     from fccs_agent.services.cache_service import Base as CacheBase
     from fccs_agent.services.rl_service import Base as RLBase
+    from fccs_agent.services.semantic_search import Base as SemanticBase
+    from fccs_agent.services.valid_intersections import Base as IntersectionBase
+    from fccs_agent.services.personalization_service import Base as PersonalizationBase
 
     # Drop all tables
     print(f"Dropping all tables from: {db_url}")
     FeedbackBase.metadata.drop_all(engine)
     CacheBase.metadata.drop_all(engine)
     RLBase.metadata.drop_all(engine)
+    SemanticBase.metadata.drop_all(engine)
+    IntersectionBase.metadata.drop_all(engine)
+    PersonalizationBase.metadata.drop_all(engine)
     print("  All tables dropped.")
 
     # Recreate
