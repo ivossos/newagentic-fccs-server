@@ -54,7 +54,26 @@ async def set_personalization_preference(
     session_id: str = "default",
     org_id: Optional[str] = None
 ) -> dict[str, Any]:
-    """Set a personalization preference."""
+    """Set a personalization preference.
+
+    Common preference keys:
+    - app_name: Application name
+    - default_cube: Default cube/plan type for queries
+    - pov_defaults: Default POV settings (dict)
+    - language: Preferred language
+    - date_format: Date format preference
+    - number_format: Number format preference
+    - export_format: Default export format (docx, xlsx, pdf)
+
+    Args:
+        key: Preference identifier
+        value: Preference value (can be string, number, dict, list)
+        session_id: Session identifier (default: 'default')
+        org_id: Optional organization identifier
+
+    Returns:
+        dict: Success status with updated checklist state.
+    """
     service = get_personalization_service()
     if not service:
         return {"status": "error", "error": "Personalization service not available"}
@@ -71,46 +90,128 @@ async def set_personalization_preference(
     return {"status": "success", "data": updated.to_dict()}
 
 
+async def get_personalization_preferences(
+    session_id: str = "default",
+    org_id: Optional[str] = None
+) -> dict[str, Any]:
+    """Get all user preferences.
+
+    Args:
+        session_id: Session identifier (default: 'default')
+        org_id: Optional organization identifier
+
+    Returns:
+        dict: All user preferences.
+    """
+    service = get_personalization_service()
+    if not service:
+        return {"status": "error", "error": "Personalization service not available"}
+
+    try:
+        preferences = service.get_all_preferences(
+            session_id=session_id,
+            org_id=org_id
+        )
+        return {
+            "status": "success",
+            "data": preferences
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
 TOOL_DEFINITIONS = [
     {
         "name": "get_personalization_status",
-        "description": "Get onboarding checklist and personalization status.",
+        "description": "Get the current personalization/onboarding checklist status showing progress on configuring preferences / Obter status do checklist de personalizacao",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "session_id": {"type": "string", "default": "default"},
-                "org_id": {"type": "string"},
+                "session_id": {
+                    "type": "string",
+                    "description": "Session identifier (default: 'default')",
+                },
+                "org_id": {
+                    "type": "string",
+                    "description": "Organization identifier (optional)",
+                },
             },
         },
     },
     {
         "name": "update_personalization_item",
-        "description": "Update a checklist item (mark done, add value/note).",
+        "description": "Update a personalization checklist item (app_name, cube, pov_defaults, dimensions, language, reporting) / Atualizar item do checklist de personalizacao",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "key": {"type": "string"},
-                "status": {"type": "string", "default": "done"},
-                "value": {"type": "string"},
-                "note": {"type": "string"},
-                "session_id": {"type": "string", "default": "default"},
-                "org_id": {"type": "string"},
+                "key": {
+                    "type": "string",
+                    "description": "The checklist item key (app_name, cube, pov_defaults, dimensions, language, reporting)",
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Item status (default: 'done')",
+                },
+                "value": {
+                    "type": "string",
+                    "description": "The value/response for the item",
+                },
+                "note": {
+                    "type": "string",
+                    "description": "Optional note for the item",
+                },
+                "session_id": {
+                    "type": "string",
+                    "description": "Session identifier (default: 'default')",
+                },
+                "org_id": {
+                    "type": "string",
+                    "description": "Organization identifier (optional)",
+                },
             },
             "required": ["key"],
         },
     },
     {
         "name": "set_personalization_preference",
-        "description": "Set a personalization preference value.",
+        "description": "Set a user preference (app_name, default_cube, pov_defaults, language, export_format, etc.) / Definir preferencia do usuario",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "key": {"type": "string"},
-                "value": {},
-                "session_id": {"type": "string", "default": "default"},
-                "org_id": {"type": "string"},
+                "key": {
+                    "type": "string",
+                    "description": "Preference identifier",
+                },
+                "value": {
+                    "description": "Preference value (string, number, dict, or list)",
+                },
+                "session_id": {
+                    "type": "string",
+                    "description": "Session identifier (default: 'default')",
+                },
+                "org_id": {
+                    "type": "string",
+                    "description": "Organization identifier (optional)",
+                },
             },
             "required": ["key", "value"],
+        },
+    },
+    {
+        "name": "get_personalization_preferences",
+        "description": "Get all user preferences / Obter todas as preferencias do usuario",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "Session identifier (default: 'default')",
+                },
+                "org_id": {
+                    "type": "string",
+                    "description": "Organization identifier (optional)",
+                },
+            },
         },
     },
 ]

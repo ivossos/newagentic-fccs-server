@@ -218,6 +218,31 @@ class PersonalizationService:
 
             return self._entry_to_status(entry)
 
+    def get_all_preferences(
+        self,
+        session_id: str,
+        org_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get all preferences for a session.
+
+        Args:
+            session_id: Session identifier
+            org_id: Optional organization identifier
+
+        Returns:
+            Dictionary of all preferences
+        """
+        with self.Session() as session:
+            entry = session.query(PersonalizationChecklist).filter_by(
+                session_id=session_id,
+                org_id=org_id
+            ).first()
+
+            if not entry:
+                return {}
+
+            return json.loads(entry.preferences_json or "{}")
+
     def _entry_to_status(self, entry: PersonalizationChecklist) -> ChecklistStatus:
         items = json.loads(entry.checklist_json or "[]")
         preferences = json.loads(entry.preferences_json or "{}")

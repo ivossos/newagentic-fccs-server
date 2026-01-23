@@ -66,7 +66,7 @@ Available tools:
 - generate_report, get_report_job_status: Generate reports
 - submit_feedback, get_recent_executions: Provide feedback to improve RL learning
 - explore_dimension, search_members, get_drill_suggestions: OLAP-aware dimension navigation with semantic search
-- get_personalization_status, update_personalization_item, set_personalization_preference: Onboarding checklist and preferences
+- get_personalization_status, update_personalization_item, set_personalization_preference, get_personalization_preferences: Onboarding checklist and preferences
 - And more consolidation and data management tools
 
 After executing a tool, you can use submit_feedback with the execution_id from the result
@@ -364,6 +364,7 @@ TOOL_HANDLERS = {
     "get_personalization_status": personalization.get_personalization_status,
     "update_personalization_item": personalization.update_personalization_item,
     "set_personalization_preference": personalization.set_personalization_preference,
+    "get_personalization_preferences": personalization.get_personalization_preferences,
     # Agentic
     "agentic_query": agentic_query,
 }
